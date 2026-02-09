@@ -5,8 +5,9 @@
 -- 1. Profiles Table
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
-  name TEXT DEFAULT 'Dreamer',
-  avatar TEXT, -- Stores URL or Base64
+  name TEXT DEFAULT 'Dreamer', -- This acts as the Username
+  full_name TEXT,              -- Optional Full Name added later
+  avatar TEXT,                 -- Stores URL or Base64
   streak INTEGER DEFAULT 0,
   timezone TEXT DEFAULT 'UTC',
   premium BOOLEAN DEFAULT FALSE,
@@ -75,10 +76,17 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.profiles (id, name, avatar)
-  VALUES (new.id, new.raw_user_meta_data->>'full_name', 'https://api.dicebear.com/7.x/avataaars/svg?seed=' || new.id);
+  VALUES (
+    new.id, 
+    COALESCE(new.raw_user_meta_data->>'username', 'Dreamer'), 
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=' || new.id
+  );
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Drop trigger if exists to recreate
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users

@@ -32,8 +32,12 @@ const App: React.FC = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else setUserProfile(null);
+      if (session) {
+        fetchProfile(session.user.id);
+      } else {
+        setUserProfile(null);
+        setActiveTab('home'); // Reset tab on logout
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -49,6 +53,7 @@ const App: React.FC = () => {
     if (data) {
       setUserProfile({
         name: data.name || 'Dreamer',
+        fullName: data.full_name || '',
         avatar: data.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`,
         streak: data.streak || 0,
         isPremium: data.premium || false
@@ -57,6 +62,7 @@ const App: React.FC = () => {
       // Fallback if no profile row exists yet
       setUserProfile({
         name: 'Dreamer',
+        fullName: '',
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`,
         streak: 0,
         isPremium: false
@@ -75,9 +81,10 @@ const App: React.FC = () => {
   }
 
   const user = userProfile || {
-    name: "Sara",
-    avatar: "https://picsum.photos/seed/sara/100/100",
-    streak: 12,
+    name: "Dreamer",
+    fullName: "",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=placeholder",
+    streak: 0,
     isPremium: false
   };
 

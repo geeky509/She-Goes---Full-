@@ -60,7 +60,7 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
       `}</style>
       
       <div className="w-full max-w-sm flex flex-col items-center">
-        {/* Animated Flower Illustration */}
+        {/* Animated Flower Illustration - Hibiscus themed */}
         <div className="w-36 h-36 bg-[#FCE7F3] rounded-full flex items-center justify-center mb-6 shadow-inner border-4 border-white overflow-hidden">
           <div className="text-7xl animate-soft-bloom">🌺</div>
         </div>
@@ -68,7 +68,7 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         <h1 className="playfair text-3xl md:text-4xl text-gray-800 text-center mb-2">Welcome back!</h1>
         <p className="text-gray-400 text-sm mb-8 text-center px-4">Your journey of doing continues here.</p>
 
-        {/* Social Logins - Moved up and made fully responsive */}
+        {/* Social Logins */}
         <div className="w-full flex flex-col items-center mb-8">
           <div className="flex flex-wrap justify-center gap-3 md:gap-4 mb-8 w-full max-w-full overflow-hidden px-2">
             {[

@@ -9,7 +9,7 @@ interface SignUpProps {
 }
 
 const SignUp: React.FC<SignUpProps> = ({ onNavigate }) => {
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,16 +25,23 @@ const SignUp: React.FC<SignUpProps> = ({ onNavigate }) => {
       email, 
       password,
       options: {
-        data: { full_name: name }
+        data: { username: username }
       }
     });
 
     if (authError) {
       setError(authError.message);
     } else if (data.user) {
-      await supabase.from('profiles').insert([
-        { id: data.user.id, name, avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.id}` }
+      // The trigger handle_new_user should automatically create the profile row,
+      // but we perform a manual upsert here to ensure immediate availability of the username.
+      const { error: profileError } = await supabase.from('profiles').upsert([
+        { 
+          id: data.user.id, 
+          name: username, 
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.id}` 
+        }
       ]);
+      if (profileError) console.error("Profile sync error:", profileError);
     }
     setLoading(false);
   };
@@ -54,15 +61,15 @@ const SignUp: React.FC<SignUpProps> = ({ onNavigate }) => {
       `}</style>
 
       <div className="w-full max-w-sm flex flex-col items-center">
-        {/* Animated Flower Illustration */}
+        {/* Animated Flower Illustration - Hibiscus theme */}
         <div className="w-36 h-36 bg-[#FCE7F3] rounded-full flex items-center justify-center mb-6 shadow-inner border-4 border-white overflow-hidden">
-          <div className="text-7xl animate-soft-bloom">🌸</div>
+          <div className="text-7xl animate-soft-bloom">🌺</div>
         </div>
 
         <h1 className="playfair text-3xl md:text-4xl text-gray-800 text-center mb-2">Join "She Goes"</h1>
         <p className="text-gray-400 text-sm mb-8 text-center px-4">Start your journey to becoming your future self.</p>
 
-        {/* Social Logins - Moved up and made fully responsive */}
+        {/* Social Logins */}
         <div className="w-full flex flex-col items-center mb-8">
           <div className="flex flex-wrap justify-center gap-3 md:gap-4 mb-8 w-full max-w-full overflow-hidden px-2">
             {[
@@ -91,10 +98,10 @@ const SignUp: React.FC<SignUpProps> = ({ onNavigate }) => {
             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Full Name"
+              placeholder="Username"
               className="w-full h-14 pl-12 pr-4 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#F472B6]/20 transition-all shadow-sm text-gray-800"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
           </div>

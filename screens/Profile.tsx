@@ -12,6 +12,7 @@ import {
   Loader2, 
   Edit2, 
   Check, 
+  User as UserIcon,
   X 
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
@@ -27,11 +28,17 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpgrade, onProfileUpdate }) =
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState(user.name);
   const [isSavingName, setIsSavingName] = useState(false);
+
+  const [isEditingFullName, setIsEditingFullName] = useState(false);
+  const [newFullName, setNewFullName] = useState(user.fullName || '');
+  const [isSavingFullName, setIsSavingFullName] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setNewName(user.name);
-  }, [user.name]);
+    setNewFullName(user.fullName || '');
+  }, [user.name, user.fullName]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -65,9 +72,38 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpgrade, onProfileUpdate }) =
       onProfileUpdate(); 
     } catch (error: any) {
       console.error('Update name error:', error);
-      alert(error.message || 'Error updating nickname');
+      alert(error.message || 'Error updating username');
     } finally {
       setIsSavingName(false);
+    }
+  };
+
+  const handleUpdateFullName = async () => {
+    const trimmedFullName = newFullName.trim();
+    if (trimmedFullName === (user.fullName || '')) {
+      setIsEditingFullName(false);
+      return;
+    }
+
+    try {
+      setIsSavingFullName(true);
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: trimmedFullName })
+        .eq('id', authUser.id);
+
+      if (error) throw error;
+      
+      setIsEditingFullName(false);
+      onProfileUpdate(); 
+    } catch (error: any) {
+      console.error('Update full name error:', error);
+      alert(error.message || 'Error updating full name');
+    } finally {
+      setIsSavingFullName(false);
     }
   };
 
@@ -86,7 +122,6 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpgrade, onProfileUpdate }) =
       const file = event.target.files?.[0];
       if (!file) return;
 
-      // Limit file size to ~500KB for Base64 DB storage to avoid payload limits
       if (file.size > 500 * 1024) {
         alert('Please choose an image smaller than 500KB for profile persistence.');
         return;
@@ -164,6 +199,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpgrade, onProfileUpdate }) =
           onChange={handleFileChange}
         />
 
+        {/* Username Editing */}
         {isEditingName ? (
           <div className="flex items-center gap-2 mt-2 w-full max-w-[240px] animate-in zoom-in duration-200">
             <input
@@ -188,7 +224,33 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpgrade, onProfileUpdate }) =
           </div>
         )}
 
-        <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2">
+        {/* Full Name Optional Editing */}
+        {isEditingFullName ? (
+          <div className="flex items-center gap-2 mt-2 w-full max-w-[240px] animate-in zoom-in duration-200">
+            <input
+              type="text"
+              value={newFullName}
+              onChange={(e) => setNewFullName(e.target.value)}
+              placeholder="Your full name (optional)"
+              autoFocus
+              className="w-full bg-transparent border-b border-gray-200 dark:border-gray-600 px-2 py-1 text-center text-sm text-gray-500 dark:text-gray-400 focus:outline-none"
+              onKeyDown={(e) => e.key === 'Enter' && handleUpdateFullName()}
+              onBlur={handleUpdateFullName}
+            />
+            <button onClick={handleUpdateFullName} disabled={isSavingFullName} className="text-green-500 p-1">
+              {isSavingFullName ? <Loader2 size={14} className="animate-spin" /> : <Check size={16} />}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 mt-1 group cursor-pointer" onClick={() => setIsEditingFullName(true)}>
+            <p className="text-gray-400 text-sm italic">
+              {user.fullName || 'Add full name'}
+            </p>
+            <Edit2 size={12} className="text-gray-300 group-hover:text-[#F472B6] transition-colors" />
+          </div>
+        )}
+
+        <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mt-3">
           {user.isPremium ? 'Plus Member' : 'Free Explorer'}
         </p>
       </div>

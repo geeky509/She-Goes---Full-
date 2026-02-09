@@ -17,7 +17,8 @@ export interface Task {
 }
 
 export interface UserProfile {
-  name: string;
+  name: string;      // This is the Username
+  fullName?: string;  // Optional Real Name
   avatar: string;
   streak: number;
   isPremium: boolean;
