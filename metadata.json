@@ -1,0 +1,8 @@
+{
+  "name": "She Goes - Full",
+  "description": "A stunning lifestyle and productivity app for ambitious women to turn dreams into daily micro-actions.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
