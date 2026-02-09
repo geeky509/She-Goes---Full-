@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { X, Sparkles, ChevronRight } from 'lucide-react';
+import { X, Sparkles, ChevronRight, Loader2 } from 'lucide-react';
 import { Category } from '../types';
+import { supabase } from '../services/supabaseClient';
 
 interface CreateProps {
   onClose: () => void;
@@ -11,6 +12,7 @@ const Create: React.FC<CreateProps> = ({ onClose }) => {
   const [step, setStep] = useState(1);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<Category>(Category.DREAM);
+  const [saving, setSaving] = useState(false);
 
   const categories = [
     { type: Category.DREAM, icon: '✨', description: 'Bucket list items and big visions' },
@@ -20,23 +22,42 @@ const Create: React.FC<CreateProps> = ({ onClose }) => {
     { type: Category.SELF, icon: '🧘', description: 'Mental health and identity' }
   ];
 
-  const handleNext = () => {
-    if (step === 1) setStep(2);
-    else {
-      // Logic to save
+  const handleCreate = async () => {
+    if (!title.trim()) return;
+    
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+
+      const { error } = await supabase
+        .from('tasks')
+        .insert([{
+          user_id: user.id,
+          title: title.trim(),
+          category: category,
+          priority: 'medium',
+          due_date: new Date().toISOString().split('T')[0]
+        }]);
+
+      if (error) throw error;
       onClose();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-[#FDF2F2] z-[60] flex flex-col p-6 animate-in slide-in-from-bottom duration-500 fill-mode-forwards">
+    <div className="fixed inset-0 bg-[#FDF2F2] dark:bg-gray-900 z-[60] flex flex-col p-6 animate-in slide-in-from-bottom duration-500 fill-mode-forwards">
       <div className="flex items-center justify-between mb-8">
-        <button onClick={onClose} className="p-2 glass rounded-full text-gray-500">
+        <button onClick={onClose} className="p-2 glass rounded-full text-gray-500 dark:text-gray-400">
           <X size={24} />
         </button>
         <div className="flex items-center gap-1">
-          <div className={`w-8 h-1.5 rounded-full ${step >= 1 ? 'bg-[#F472B6]' : 'bg-gray-200'}`}></div>
-          <div className={`w-8 h-1.5 rounded-full ${step >= 2 ? 'bg-[#F472B6]' : 'bg-gray-200'}`}></div>
+          <div className={`w-8 h-1.5 rounded-full ${step >= 1 ? 'bg-[#F472B6]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+          <div className={`w-8 h-1.5 rounded-full ${step >= 2 ? 'bg-[#F472B6]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
         </div>
         <div className="w-10"></div>
       </div>
@@ -44,8 +65,8 @@ const Create: React.FC<CreateProps> = ({ onClose }) => {
       <div className="flex-1 flex flex-col">
         {step === 1 ? (
           <div className="animate-in fade-in duration-300">
-            <h1 className="playfair text-4xl text-gray-800 mb-2">What's your next big step?</h1>
-            <p className="text-gray-500 mb-8">Choose a category for your new journey.</p>
+            <h1 className="playfair text-4xl text-gray-800 dark:text-gray-100 mb-2">What's your next big step?</h1>
+            <p className="text-gray-500 dark:text-gray-400 mb-8">Choose a category for your new journey.</p>
             
             <div className="space-y-4 overflow-y-auto max-h-[60vh] pr-2">
               {categories.map((cat) => (
@@ -54,13 +75,13 @@ const Create: React.FC<CreateProps> = ({ onClose }) => {
                   onClick={() => setCategory(cat.type)}
                   className={`w-full flex items-center gap-5 p-5 rounded-[2rem] border transition-all duration-300 active:scale-[0.97] ${
                     category === cat.type 
-                    ? 'bg-white border-[#F472B6] shadow-xl ring-4 ring-[#F472B6]/10' 
-                    : 'bg-white/40 border-transparent text-gray-400'
+                    ? 'bg-white dark:bg-gray-800 border-[#F472B6] shadow-xl ring-4 ring-[#F472B6]/10' 
+                    : 'bg-white/40 dark:bg-gray-800/40 border-transparent text-gray-400 dark:text-gray-500'
                   }`}
                 >
                   <span className="text-3xl">{cat.icon}</span>
                   <div className="text-left">
-                    <p className={`font-bold ${category === cat.type ? 'text-[#F472B6]' : 'text-gray-600'}`}>{cat.type}</p>
+                    <p className={`font-bold ${category === cat.type ? 'text-[#F472B6]' : 'text-gray-600 dark:text-gray-300'}`}>{cat.type}</p>
                     <p className="text-xs text-gray-400 font-medium">{cat.description}</p>
                   </div>
                   {category === cat.type && <ChevronRight className="ml-auto text-[#F472B6]" />}
@@ -70,18 +91,18 @@ const Create: React.FC<CreateProps> = ({ onClose }) => {
           </div>
         ) : (
           <div className="animate-in slide-in-from-right duration-300">
-            <h1 className="playfair text-4xl text-gray-800 mb-2">Define your goal</h1>
-            <p className="text-gray-500 mb-8">What exactly are you going to achieve?</p>
+            <h1 className="playfair text-4xl text-gray-800 dark:text-gray-100 mb-2">Define your goal</h1>
+            <p className="text-gray-500 dark:text-gray-400 mb-8">What exactly are you going to achieve?</p>
 
-            <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-white">
+            <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-xl border border-white dark:border-gray-700">
               <textarea
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 autoFocus
                 placeholder="e.g., Start a side hustle in graphic design..."
-                className="w-full min-h-[150px] text-2xl font-semibold text-gray-800 placeholder-gray-200 resize-none border-none focus:ring-0"
+                className="w-full min-h-[150px] text-2xl font-semibold text-gray-800 dark:text-gray-100 placeholder-gray-200 dark:placeholder-gray-600 resize-none border-none focus:ring-0 bg-transparent"
               />
-              <div className="flex items-center gap-2 mt-4 text-[#F472B6] bg-[#FCE7F3] w-fit px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest">
+              <div className="flex items-center gap-2 mt-4 text-[#F472B6] bg-[#FCE7F3] dark:bg-pink-900/30 w-fit px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest">
                 <Sparkles size={14} />
                 Gemini AI Optimized
               </div>
@@ -91,13 +112,13 @@ const Create: React.FC<CreateProps> = ({ onClose }) => {
       </div>
 
       <button
-        onClick={handleNext}
-        disabled={step === 2 && !title}
+        onClick={step === 1 ? () => setStep(2) : handleCreate}
+        disabled={saving || (step === 2 && !title)}
         className={`w-full h-16 rounded-2xl text-white font-bold text-lg shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 ${
-          step === 2 && !title ? 'bg-gray-300 opacity-50' : 'bg-[#F472B6]'
+          (step === 2 && !title) ? 'bg-gray-300 dark:bg-gray-700 opacity-50' : 'bg-[#F472B6]'
         }`}
       >
-        {step === 1 ? 'Next' : 'Create My Journey'}
+        {saving ? <Loader2 className="animate-spin" /> : step === 1 ? 'Next' : 'Create My Journey'}
       </button>
     </div>
   );

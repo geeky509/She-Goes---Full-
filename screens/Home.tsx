@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import { getDailyAction } from '../services/geminiService';
 import { Category, UserProfile } from '../types';
 import { Sparkles, Trophy, Flame, Share2 } from 'lucide-react';
+import { supabase } from '../services/supabaseClient';
 import confetti from 'https://cdn.skypack.dev/canvas-confetti';
 
 interface HomeProps {
@@ -21,20 +22,54 @@ const Home: React.FC<HomeProps> = ({ user, onLockedFeature }) => {
       setLoading(true);
       const action = await getDailyAction(Category.SELF);
       setDailyAction(action);
+      
+      // Check if already completed today
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const today = new Date().toISOString().split('T')[0];
+        const { data } = await supabase
+          .from('daily_actions')
+          .select('*')
+          .eq('user_id', authUser.id)
+          .gte('completed_at', today);
+        
+        if (data && data.length > 0) {
+          setCompleted(true);
+        }
+      }
       setLoading(false);
     };
     loadAction();
   }, []);
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (!completed) {
-      setCompleted(true);
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#F472B6', '#FCE7F3', '#FDE68A']
-      });
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) return;
+
+        // Record in daily_actions
+        await supabase.from('daily_actions').insert([{
+          user_id: authUser.id,
+          action_text: dailyAction.action,
+          category: 'Self'
+        }]);
+
+        // Increment streak in profile
+        await supabase.from('profiles').update({ 
+          streak: user.streak + 1 
+        }).eq('id', authUser.id);
+
+        setCompleted(true);
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#F472B6', '#FCE7F3', '#FDE68A']
+        });
+      } catch (err) {
+        console.error("Completion error:", err);
+      }
     }
   };
 
@@ -44,7 +79,7 @@ const Home: React.FC<HomeProps> = ({ user, onLockedFeature }) => {
   };
 
   return (
-    <div className="flex flex-col space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="flex flex-col space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <Header user={user} />
 
       {/* Streak Counter */}
